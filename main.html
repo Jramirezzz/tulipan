@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Flores y Ritmo Cardiaco</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <style>
+    body { display:flex; flex-direction:column; align-items:center; background:#f7f7f7; font-family:system-ui, Arial; }
+    #controls { margin:16px; }
+    button { padding:10px 18px; margin:0 6px; font-size:15px; border:0; border-radius:10px; cursor:pointer; color:#fff; background:#ff6f91; }
+    button:hover { background:#ff3c6d; }
+    canvas { background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.07); margin-bottom:30px; }
+    h2 { margin:20px 0 8px; }
+  </style>
+</head>
+<body>
+  <h1>🌷 Ramo de Tulipanes y Ritmo Cardiaco</h1>
+  <div id="controls">
+    <button onclick="construir()">Construir Ramo</button>
+    <button onclick="borrar()">Borrar Ramo</button>
+  </div>
+
+  <h2>Ramo Animado</h2>
+  <div id="ramo"></div>
+
+  <h2>Tulipán Básico en Plano Cartesiano</h2>
+  <div id="tulipan"></div>
+  <button onclick="construirTulipan()">Construir Tulipán</button>
+
+  <h2>Ritmo Cardiaco</h2>
+  <div id="ritmo"></div>
+  <button onclick="construirRitmo()">Construir Ritmo</button>
+
+  <script>
+    // ============= 1. RAMO DE TULIPANES =============
+    let flores = [];
+    let etapa = 0;   
+    let progreso = 0;
+    let ramoCanvas;
+
+    function ramoPetalos(x, y, c, dir) {
+      stroke(0); strokeWeight(1);
+      fill(c === 'white' ? 245 : c);
+      beginShape();
+      vertex(x, y);
+      bezierVertex(x - 8, y + dir*50, x - 5, y + dir*110, x, y + dir*130);
+      bezierVertex(x + 5, y + dir*110, x + 8, y + dir*50, x, y);
+      endShape(CLOSE);
+
+      beginShape();
+      vertex(x, y);
+      bezierVertex(x - 35, y + dir*40, x - 25, y + dir*110, x - 10, y + dir*125);
+      bezierVertex(x - 5, y + dir*110, x - 8, y + dir*50, x, y);
+      endShape(CLOSE);
+
+      beginShape();
+      vertex(x, y);
+      bezierVertex(x + 35, y + dir*40, x + 25, y + dir*110, x + 10, y + dir*125);
+      bezierVertex(x + 8, y + dir*50, x + 5, y + dir*110, x, y);
+      endShape(CLOSE);
+    }
+
+    function ramoHoja(x, y, orient) {
+      noStroke(); fill(0,150,0,150);
+      beginShape();
+      vertex(x, y);
+      bezierVertex(x + 60*orient, y - 40, x + 40*orient, y + 120, x, y + 180);
+      bezierVertex(x - 20*orient, y + 100, x - 10*orient, y + 20, x, y);
+      endShape(CLOSE);
+    }
+
+    function setup() {
+      ramoCanvas = createCanvas(720, 500); // << más alto
+      ramoCanvas.parent("ramo");
+      noLoop();
+      flores = [
+        {x: 120, y: 140, color: 'crimson'},
+        {x: 200, y: 160, color: 'white'},
+        {x: 280, y: 170, color: 'deeppink'},
+        {x: 360, y: 150, color: 'crimson'},
+        {x: 440, y: 180, color: 'white'}
+      ];
+    }
+
+    function draw() {
+      background(247);
+
+      if (etapa > 0) {
+        stroke(0,128,0); strokeWeight(4);
+        for (let f of flores) {
+          let len = map(progreso, 0, 100, 0, 220);
+          line(f.x, f.y, f.x, f.y + len);
+        }
+      }
+
+      if (etapa > 1) {
+        for (let i=0; i<flores.length; i++) {
+          let f = flores[i];
+          if (i%2===0) ramoHoja(f.x-10, f.y+40, +1);
+          else ramoHoja(f.x+10, f.y+40, -1);
+        }
+      }
+
+      if (etapa > 2) {
+        for (let f of flores) ramoPetalos(f.x, f.y, f.color, -1);
+      }
+    }
+
+    function construir() {
+      etapa = 1; progreso = 0; loop();
+      const inter = setInterval(() => {
+        progreso += 6;
+        if (progreso >= 100) {
+          etapa++; progreso=100;
+          if (etapa > 3) { etapa=3; clearInterval(inter); noLoop(); }
+        }
+        redraw();
+      }, 140);
+    }
+
+    function borrar() { etapa=0; progreso=0; background(247); noLoop(); }
+
+    // ============= 2. TULIPÁN CARTESIANO (CON DISEÑO) =============
+    let tulipanP5 = new p5(p => {
+      let points = [];
+      let progress = 0, anim = false;
+
+      p.setup = () => {
+        let c = p.createCanvas(400,300);
+        c.parent("tulipan");
+        buildPoints();
+      };
+
+      function buildPoints(){
+        let cx = p.width/2, cy = p.height/2+40;
+        for(let j=cy;j<=cy+80;j+=4) points.push({x:cx,y:j});
+        for(let a=0;a<=1;a+=0.05) points.push({x:cx-25+20*a,y:cy+50-50*a});
+        for(let a=0;a<=1;a+=0.05) points.push({x:cx+25-20*a,y:cy+50-50*a});
+        points.push({x:cx,y:cy});
+        points.push({x:cx-20,y:cy-40});
+        points.push({x:cx-10,y:cy-80});
+        points.push({x:cx,y:cy-100});
+        points.push({x:cx+10,y:cy-80});
+        points.push({x:cx+20,y:cy-40});
+        points.push({x:cx,y:cy});
+      }
+
+      p.draw = () => {
+        p.background(245,248,255);
+        // cuadrícula con azul suave
+        p.stroke(200,220,255); p.strokeWeight(1);
+        for (let i=0;i<=p.width;i+=40) p.line(i,0,i,p.height);
+        for (let j=0;j<=p.height;j+=40) p.line(0,j,p.width,j);
+        // ejes
+        p.stroke(50,50,150); p.strokeWeight(2);
+        p.line(0,p.height/2,p.width,p.height/2);
+        p.line(p.width/2,0,p.width/2,p.height);
+
+        if(anim && progress<points.length-1) progress++;
+
+        // dibujar la flor
+        p.stroke("crimson"); p.strokeWeight(3);
+        p.noFill();
+        p.beginShape();
+        for(let i=0;i<=progress;i++){
+          p.vertex(points[i].x, points[i].y);
+          // puntos brillantes
+          p.fill("red"); p.noStroke();
+          p.circle(points[i].x, points[i].y, 5);
+          p.noFill(); p.stroke("crimson");
+        }
+        p.endShape();
+      };
+
+      p.construir = () => {progress=0; anim=true;};
+    });
+    function construirTulipan(){ tulipanP5.construir(); }
+
+   // ============= 3. RITMO CARDIACO (REALISTA Y LENTO) =============
+let ritmoP5 = new p5(p => {
+  let points = [];
+  let progress=0, anim=false;
+
+  p.setup = () => {
+    let c = p.createCanvas(500,200);
+    c.parent("ritmo");
+    buildPoints();
+  };
+
+  function buildPoints(){
+    let baseY=100;
+    let x=20;
+
+    // Un ciclo típico ECG: P - QRS - T
+    while(x < 480){
+      // onda P
+      points.push({x:x, y:baseY});
+      x+=10; points.push({x:x, y:baseY-10});
+      x+=10; points.push({x:x, y:baseY});
+
+      // QRS
+      x+=5;  points.push({x:x, y:baseY+20});
+      x+=5;  points.push({x:x, y:baseY-60});
+      x+=5;  points.push({x:x, y:baseY+30});
+      x+=10; points.push({x:x, y:baseY});
+
+      // onda T
+      x+=15; points.push({x:x, y:baseY});
+      x+=10; points.push({x:x, y:baseY-25});
+      x+=10; points.push({x:x, y:baseY});
+      
+      // reposo entre latidos
+      x+=40; points.push({x:x, y:baseY});
+    }
+  }
+
+  p.draw = () => {
+    p.background(240,250,255);
+    // cuadrícula azul clara
+    p.stroke(180,220,255); p.strokeWeight(1);
+    for (let i=0;i<=p.width;i+=25) p.line(i,0,i,p.height);
+    for (let j=0;j<=p.height;j+=25) p.line(0,j,p.width,j);
+
+    if(anim && progress < points.length-1 && p.frameCount % 3 === 0) progress++;
+
+    // línea ECG con efecto neón
+    p.stroke(0,255,100); p.strokeWeight(3);
+    p.noFill();
+    p.beginShape();
+    for(let i=0;i<=progress;i++) p.vertex(points[i].x, points[i].y);
+    p.endShape();
+
+    // resplandor
+    p.stroke(0,255,100,100); p.strokeWeight(8);
+    p.beginShape();
+    for(let i=0;i<=progress;i++) p.vertex(points[i].x, points[i].y);
+    p.endShape();
+  };
+
+  p.construir = () => {progress=0; anim=true;};
+});
+function construirRitmo(){ ritmoP5.construir(); }
+
+  </script>
+</body>
+</html>
